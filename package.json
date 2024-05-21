@@ -1,0 +1,42 @@
+{
+  "name": "docsify-pandoc",
+  "version": "0.0.1",
+  "description": "Convert your docsify docs to almost any format using pandoc",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "module": "dist/index.mjs",
+  "files": [
+    "dist"
+  ],
+  "bin": {
+    "docsify-pandoc": "./dist/index.js"
+  },
+  "scripts": {
+    "lint": "tsc",
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "tsup src/index.ts --format cjs,esm --dts"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ArtuKILL/docsify-pandoc.git"
+  },
+  "keywords": [
+    "docsify",
+    "docs",
+    "pandoc"
+  ],
+  "author": "archurrito",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/ArtuKILL/docsify-pandoc/issues"
+  },
+  "homepage": "https://github.com/ArtuKILL/docsify-pandoc#readme",
+  "devDependencies": {
+    "@types/node": "^20.12.12",
+    "tsup": "^8.0.2",
+    "typescript": "^5.4.5"
+  },
+  "dependencies": {
+    "chalk": "^5.3.0"
+  }
+}
