@@ -1,17 +1,25 @@
 import chalk from "chalk";
 
-import { readFileSync, writeFileSync } from "fs";
+import { readFileSync, stat } from "fs";
 import which from "which";
 import { exec } from "child_process";
-import { stderr } from "process";
+import Mustache from "mustache";
+import { ShellString } from "shelljs";
+
+interface MustacheConfig {
+  data: string | string[];
+}
+
 
 interface Config {
-  mustache: boolean;
+  mustache: MustacheConfig | null;
   convertTo: string;
+  contents: string;
   pandocPath: string | null;
   referenceDoc: string | null;
-  outputPath: string;
-  outputName: string | null;
+  outputFilename: string;
+  outputDir: string;
+  rootPath: string;
 }
 
 function merge(a: Object, b: Object) {
@@ -22,12 +30,14 @@ function merge(a: Object, b: Object) {
 }
 
 const defaultConfig = {
-  mustache: false,
+  mustache: null,
   convertTo: 'docx',
   pandocPath: null,
+  contents: '_sidebar.md',
   referenceDoc: null,
-  outputPath: '.',
-  outputName: null
+  outputFilename: 'doc',
+  outputDir: '.',
+  rootPath: '.',
 }
 
 function pandocOutput(err: any, stdout: any, stderr: any) {
@@ -39,8 +49,8 @@ function pandocOutput(err: any, stdout: any, stderr: any) {
   }
 }
 
-
 export function main(config: Object) {
+
   console.log(chalk.bold.cyanBright.underline("Docsify pandoc!"));
   console.log();
 
@@ -54,10 +64,13 @@ export function main(config: Object) {
   const {
     mustache,
     convertTo,
-    outputPath,
-    outputName,
-    referenceDoc
+    outputFilename,
+    outputDir,
+    referenceDoc,
+    contents,
+    rootPath,
   } = runtimeConfig;
+
 
   if (!pandocPath) {
     try {
@@ -70,14 +83,105 @@ export function main(config: Object) {
       console.log(chalk.green("pandoc found at: ") + pandocPath)
   }
 
+  let mdFiles: (string | undefined)[] | undefined;
+
+  try {
+    const contentsStr = readFileSync(`${rootPath}/${contents}`).toString();
+
+    mdFiles = contentsStr
+      .match(/\(([a-zA-Z0-9./_]+)\)/gi)
+      ?.map(item => item.match(/\(([a-zA-Z0-9./_]+)\)/)?.[1]);
+
+  } catch {
+    console.error("Error reading files, check contents path!");
+    console.error(`Is ${rootPath}/${contents} the right path?`)
+    process.exit(1);
+  }
+
+
   if (!pandocPath) {
     console.error("Cannot find pandoc, please provide the path in the config file.");
     process.exit(1);
   }
 
+  if (!mdFiles) {
+    console.error("No files detected!");
+    process.exit(1);
+  }
 
-  exec(`${pandocPath} -f gfm -t ${convertTo} -o ${outputName}.docx *.md`, pandocOutput);
 
+  mdFiles = mdFiles.map(filename => filename === "/" ? "README.md" : filename);
+
+
+  if (mustache) {
+
+    let bigMdString: string = "";
+
+
+    for (const mdFilename of mdFiles) {
+      if (!mdFilename)
+        continue;
+      bigMdString += readFileSync(`${rootPath}/${mdFilename}`, 'utf8').toString(); +  "\n<br>\n";
+    }
+
+    const data = mustache.data;
+
+    let views: object[] = [];
+
+    if (data instanceof Array) {
+      for (const path of data) {
+        try {
+          const viewFile = readFileSync(`${rootPath}/${path}`, 'utf8');
+          const view = JSON.parse(viewFile);
+          views.push(view);
+        } catch {
+          console.error("Data path provided in config not exist");
+          process.exit(1);
+        }
+      }
+
+    } else if (typeof data === 'string') {
+      try {
+        const viewFile = readFileSync(`${rootPath}/${data}`, 'utf8');
+        const view = JSON.parse(viewFile);
+        views.push(view);
+      } catch {
+        console.error("Data path provided in config not exist");
+        process.exit(1);
+      }
+    } else {
+      console.error("Unkown data provided in mustache");
+      process.exit(1);
+    }
+
+
+
+    for (const view of views) {
+      bigMdString = Mustache.render(bigMdString, view);
+    }
+
+    // console.log(bigMdString);
+
+    const pipeStr: ShellString = ShellString(bigMdString);
+
+    const status = pipeStr.exec(`${pandocPath} -f gfm -t ${convertTo} ${referenceDoc ? "--reference-doc=" + referenceDoc : ""} -o ${outputDir}/${outputFilename}`);
+    // console.log(thing);
+    // exec(`echo ${bigMdString} | ${pandocPath} -f gfm -t ${convertTo} -o ${output}.${convertTo}`, pandocOutput);
+
+    if (status.code) {
+      console.error("Error on convertion");
+      process.exit(1);
+    }
+
+    console.log(chalk.green("Convertion successful! 🎉"));
+    process.exit(0);
+  }
+
+  if (!mustache) {
+    exec(`${pandocPath} -f gfm -t ${convertTo} -o ${outputDir}/${outputFilename} ${referenceDoc ? "--reference-doc=" + referenceDoc : ""} ${mdFiles.join(" ")}`, pandocOutput);
+    console.log(chalk.green("Convertion successful! 🎉"));
+  }
+  process.exit(0);
 }
 
 
