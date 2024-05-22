@@ -1,6 +1,6 @@
 {
   "name": "docsify-pandoc",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "Convert your docsify docs to almost any format using pandoc",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
