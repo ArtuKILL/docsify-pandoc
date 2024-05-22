@@ -110,7 +110,7 @@ export function main(config: Object) {
   }
 
 
-  mdFiles = mdFiles.map(filename => filename === "/" ? "README.md" : filename);
+  mdFiles = mdFiles.map(filename => filename === "/" ? `${rootPath}/README.md` : `${rootPath}/${filename}`);
 
 
   if (mustache) {
@@ -164,7 +164,11 @@ export function main(config: Object) {
 
     const pipeStr: ShellString = ShellString(bigMdString);
 
-    const status = pipeStr.exec(`${pandocPath} -f gfm -t ${convertTo} ${referenceDoc ? "--reference-doc=" + referenceDoc : ""} -o ${outputDir}/${outputFilename}`);
+    const command = `${pandocPath} -f gfm -t ${convertTo} ${referenceDoc ? "--reference-doc=" + referenceDoc : ""} -o ${outputDir}/${outputFilename}`;
+
+    console.log(chalk.yellow("executing: "), command);
+
+    const status = pipeStr.exec(command);
     // console.log(thing);
     // exec(`echo ${bigMdString} | ${pandocPath} -f gfm -t ${convertTo} -o ${output}.${convertTo}`, pandocOutput);
 
@@ -178,7 +182,9 @@ export function main(config: Object) {
   }
 
   if (!mustache) {
-    exec(`${pandocPath} -f gfm -t ${convertTo} -o ${outputDir}/${outputFilename} ${referenceDoc ? "--reference-doc=" + referenceDoc : ""} ${mdFiles.join(" ")}`, pandocOutput);
+    const command = `${pandocPath} -f gfm -t ${convertTo} -o ${outputDir}/${outputFilename} ${referenceDoc ? "--reference-doc=" + referenceDoc : ""} ${mdFiles.join(" ")}`;
+    console.log(chalk.yellow("executing: "), command);
+    exec(command, pandocOutput);
     console.log(chalk.green("Convertion successful! 🎉"));
   }
   process.exit(0);
