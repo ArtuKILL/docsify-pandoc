@@ -10,7 +10,7 @@
     "dist"
   ],
   "bin": {
-    "docsify-pandoc": "./.bin/cli.js"
+    "docsify-pandoc": ".bin/cli.js"
   },
   "scripts": {
     "lint": "tsc",
