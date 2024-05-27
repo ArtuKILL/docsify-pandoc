@@ -17,6 +17,7 @@ interface Config {
   contents: string;
   pandocPath: string | null;
   referenceDoc: string | null;
+  pdfEngine: string;
   outputFilename: string;
   outputDir: string;
   rootPath: string;
@@ -34,6 +35,7 @@ const defaultConfig = {
   convertTo: 'docx',
   pandocPath: null,
   contents: '_sidebar.md',
+  pdfEngine: 'pdflatex',
   referenceDoc: null,
   outputFilename: 'doc',
   outputDir: '.',
@@ -69,6 +71,7 @@ export function main(config: Object) {
     referenceDoc,
     contents,
     rootPath,
+    pdfEngine,
   } = runtimeConfig;
 
 
@@ -164,7 +167,7 @@ export function main(config: Object) {
 
     const pipeStr: ShellString = ShellString(bigMdString);
 
-    const command = `${pandocPath} -f gfm -t ${convertTo} ${referenceDoc ? "--reference-doc=" + referenceDoc : ""} -o ${outputDir}/${outputFilename}`;
+    const command = `${pandocPath} -f gfm -t ${convertTo} ${convertTo === "pdf" ? "--pdf-engine=" + pdfEngine : ""} ${referenceDoc ? "--reference-doc=" + referenceDoc : ""} -o ${outputDir}/${outputFilename}`;
 
     console.log(chalk.yellow("executing: "), command);
 
@@ -182,7 +185,7 @@ export function main(config: Object) {
   }
 
   if (!mustache) {
-    const command = `${pandocPath} -f gfm -t ${convertTo} -o ${outputDir}/${outputFilename} ${referenceDoc ? "--reference-doc=" + referenceDoc : ""} ${mdFiles.join(" ")}`;
+    const command = `${pandocPath} -f gfm -t ${convertTo} ${convertTo === "pdf" ? "--pdf-engine=" + pdfEngine : ""} -o ${outputDir}/${outputFilename} ${referenceDoc ? "--reference-doc=" + referenceDoc : ""} ${mdFiles.join(" ")}`;
     console.log(chalk.yellow("executing: "), command);
     exec(command, pandocOutput);
     console.log(chalk.green("Convertion successful! 🎉"));
